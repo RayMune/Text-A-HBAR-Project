@@ -352,15 +352,17 @@ def send_message():
                     'mpesa_confirmed': False
                 }
                 # Trigger STK push simulation for the total amount (UI will handle PIN entry)
-                transaction_id = str(uuid.uuid4())[:10].upper()
+                transaction_id = "TJTG" + ''.join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=6))
                 current_time = datetime.now().strftime("%d/%m/%y at %I:%M %p")
                 old_balance = get_balance(user_session_id)
                 new_balance = max(0, old_balance - total)
                 # deduct only at STK success; but keep previous behavior of reserving funds by deducting now:
                 set_balance(user_session_id, new_balance)
                 confirmation_message_text = (
-                    f"{transaction_id} Pending. STK Push triggered for Ksh{total:.2f} to {stock['name']} {recipient_number} on {current_time}. "
-                    f"Reserved KES {total:.2f}. New M-PESA balance (simulated) is ksh{new_balance:.2f}."
+                    f"{transaction_id} Confirmed. Ksh{total:.2f} sent to "
+                    f"{stock['name']} {recipient_number} on {current_time}. "
+                    f"New M-pesa balance is ksh{new_balance:.2f}. Transaction cost, Ksh0.00. "
+                    "Amount you can transact within the day is 499,230."
                 )
                 pending_mpesa_confirmations[user_session_id] = {
                     'message': confirmation_message_text,
@@ -386,15 +388,17 @@ def send_message():
             stock = find_stock(target)
             
             if stock:
-                transaction_id = str(uuid.uuid4())[:10].upper()
+                transaction_id = "TJTG" + ''.join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=6))
                 current_time = datetime.now().strftime("%d/%m/%y at %I:%M %p")
                 old_balance = get_balance(user_session_id)
                 new_balance = max(0, old_balance - amount)
                 set_balance(user_session_id, new_balance)
                 
                 confirmation_message_text = (
-                    f"{transaction_id} Pending. STK Push triggered for Ksh{amount:.2f} to {stock['name']} {recipient_number} on {current_time}. "
-                    f"Reserved KES {amount:.2f}. New M-PESA balance (simulated) is ksh{new_balance:.2f}."
+                    f"{transaction_id} Confirmed. Ksh{amount:.2f} sent to "
+                    f"{stock['name']} {recipient_number} on {current_time}. "
+                    f"New M-pesa balance is ksh{new_balance:.2f}. Transaction cost, Ksh0.00. "
+                    "Amount you can transact within the day is 499,230."
                 )
                 
                 pending_purchases[user_session_id] = {
@@ -442,7 +446,7 @@ def send_message():
     stk_match = re.match(r'^(pay|PAY)\s+([\d\.]+)\s*$', user_message, re.IGNORECASE)
     if stk_match:
         amount = float(stk_match.group(2))
-        transaction_id = str(uuid.uuid4())[:10].upper()
+        transaction_id = "TJTG" + ''.join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=6))
         current_time = datetime.now().strftime("%d/%m/%y at %I:%M %p")
         old_balance = get_balance(user_session_id)
         new_balance = max(0, old_balance - amount)
@@ -551,4 +555,5 @@ def enter_pin():
         return jsonify({'status': 'error', 'message': 'Incorrect PIN. Transaction failed.'})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    #app.run(debug=True)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8080)))

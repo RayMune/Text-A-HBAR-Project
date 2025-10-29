@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone Simulator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+    <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+            <!-- STK Push Overlay -->
+            <div class="stk-overlay" id="stk-overlay">
+                <div class="stk-dialog">
+                    <div class="stk-header">
+                        <img src="https://png.co.ke/wp-content/uploads/2023/02/Mpesa-Logo.png" alt="M-PESA" class="mpesa-logo">
+                        <p>M-PESA</p>
+                    </div>
+                    <div class="stk-body">
+                        <p class="stk-message" id="stk-message"></p>
+                        <input type="password" id="stk-pin-input" placeholder="M-PESA PIN" class="stk-input" />
+                    </div>
+                    <div class="stk-footer">
+                        <button class="stk-button cancel" id="stk-cancel-button">Cancel</button>
+                        <button class="stk-button confirm" id="stk-confirm-button">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversations List View -->
+            <div class="conversations-list-view" id="conversations-list-view">
+                <div class="top-bar">
+                    <span class="title">Messages</span>
+                    <button class="new-message-btn">+</button>
+                </div>
+                <div class="conversations-list" id="conversations-list">
+                    <!-- Conversation items will be injected here by JavaScript -->
+                    <!-- Initial dummy item for structure, will be replaced by JS -->
+                    <div class="conversation-item" data-convo-id="0"> 
+                        <div class="sender-info">
+                            <span class="sender-name">Loading...</span>
+                            <span class="sender-number"></span>
+                        </div>
+                        <div class="last-message-preview">
+                            <p>Loading conversations...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat View (Initially hidden) -->
+            <div class="chat-view" id="chat-view">
+                <div class="chat-header">
+                    <button class="back-button" id="back-to-list-button">←</button>
+                    <div class="sender-info">
+                        <span class="sender-name" id="current-chat-sender-name"></span>
+                        <span class="sender-number" id="current-chat-sender-number"></span>
+                    </div>
+                    <!-- Removed last message preview from chat header for cleaner look -->
+                </div>
+                <div class="message-area" id="current-message-area">
+                    <!-- Messages for the active chat will be loaded here -->
+                </div>
+                <div class="input-area">
+                    <input type="text" id="message-input" placeholder="Type a message...">
+                    <button id="send-button">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables for STK functionality
+        let stkPromptActive = false;
+        let currentStkDetails = {};
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const conversationsListView = document.getElementById('conversations-list-view');
+            const chatView = document.getElementById('chat-view');
+            const conversationsList = document.getElementById('conversations-list');
+            const backToListButton = document.getElementById('back-to-list-button');
+            const currentChatSenderName = document.getElementById('current-chat-sender-name');
+            const currentChatSenderNumber = document.getElementById('current-chat-sender-number');
+            const currentMessageArea = document.getElementById('current-message-area');
+            const messageInput = document.getElementById('message-input');
+            const sendButton = document.getElementById('send-button');
+
+            // STK Push elements
+            const stkOverlay = document.getElementById('stk-overlay');
+            const stkMessage = document.getElementById('stk-message');
+            const stkPinInput = document.getElementById('stk-pin-input');
+            const stkCancelButton = document.getElementById('stk-cancel-button');
+            const stkConfirmButton = document.getElementById('stk-confirm-button');
+
+            let activeConversationId = null;
+
+            // --- Dummy Data for Conversations ---
+            // In a real app, this would be fetched from a backend/database
+            let conversations = [
+                {
+                    id: 1,
+                    senderName: 'Kamba Bot',
+                    senderNumber: '+254 712 345 678',
+                    lastMessage: 'Hello! Type a message and press send. We can use Kamba, Dholuo, Giriama etc.',
+                    lastActivityTime: Date.now() - 5000,
+                    messages: [
+                        { text: 'Hello! Type a message and press send. We can use Kamba, Dholuo, Giriama etc.', type: 'received' }
+                    ]
+                },
+                {
+                    id: 2,
+                    senderName: 'Dholuo Friend',
+                    senderNumber: '+254 723 456 789',
+                    lastMessage: 'Jambo! Nadi? (Hello! How are you?)',
+                    lastActivityTime: Date.now() - 10000,
+                    messages: [
+                        { text: 'Jambo! Nadi? (Hello! How are you?)', type: 'received' }
+                    ]
+                },
+                {
+                    id: 3,
+                    senderName: 'Giriama Pal',
+                    senderNumber: '+254 734 567 890',
+                    lastMessage: 'Habari za asubuhi! (Good morning!)',
+                    lastActivityTime: Date.now() - 15000,
+                    messages: [
+                        { text: 'Habari za asubuhi! (Good morning!)', type: 'received' }
+                    ]
+                },
+                {
+                    id: 4,
+                    senderName: 'Stock Trader',
+                    senderNumber: '22544',
+                    lastMessage: 'Welcome to the stock trading desk. Ask for prices or buy shares!',
+                    lastActivityTime: Date.now() - 20000,
+                    messages: [
+                        { text: 'Welcome to the stock trading desk. Ask for prices or buy shares!', type: 'received' }
+                    ]
+                },
+                {
+                    id: 5,
+                    senderName: 'News Updates',
+                    senderNumber: '+254 711 223 344',
+                    lastMessage: 'Latest headlines: Weather alert issued for Nairobi.',
+                    lastActivityTime: Date.now() - 25000,
+                    messages: [
+                        { text: 'Latest headlines: Weather alert issued for Nairobi.', type: 'received' }
+                    ]
+                }
+            ];
+
+            // --- Function to Render Conversations List ---
+            function renderConversationsList() {
+                conversationsList.innerHTML = ''; // Clear existing list
+                
+                // Sort conversations by last activity (most recent first)
+                const sortedConversations = [...conversations].sort((a, b) => {
+                    return (b.lastActivityTime || 0) - (a.lastActivityTime || 0);
+                });
+                
+                sortedConversations.forEach(convo => {
+                    const convoItem = document.createElement('div');
+                    convoItem.classList.add('conversation-item');
+                    if (convo.senderName === 'Stock Trader') {
+                        convoItem.classList.add('stock-trader');
+                    }
+                    convoItem.dataset.convoId = convo.id;
+                    convoItem.innerHTML = `
+                        <div class="sender-info">
+                            ${convo.senderName === 'Stock Trader' ? '<img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Stock" class="stock-icon">' : ''}
+                            <span class="sender-name">${convo.senderName}</span>
+                            <span class="sender-number">${convo.senderNumber}</span>
+                        </div>
+                        <div class="last-message-preview">
+                            <p>${convo.lastMessage}</p>
+                        </div>
+                    `;
+                    convoItem.addEventListener('click', () => openChat(convo.id));
+                    conversationsList.appendChild(convoItem);
+                });
+            }
+
+            // --- Function to Open a Specific Chat ---
+            function openChat(convoId) {
+                activeConversationId = convoId;
+                const convo = conversations.find(c => c.id === convoId);
+                
+                if (convo) {
+                    // Update chat header for Stock Trader persona
+                    const chatHeader = chatView.querySelector('.chat-header');
+                    if (convo.senderName === 'Stock Trader') {
+                        chatHeader.classList.add('stock-trader');
+                        currentChatSenderName.innerHTML = '<img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Stock" class="stock-icon"> Stock Trader';
+                    } else {
+                        chatHeader.classList.remove('stock-trader');
+                        currentChatSenderName.textContent = convo.senderName;
+                    }
+                    currentChatSenderNumber.textContent = convo.senderNumber;
+                    // Clear and load messages for this conversation
+                    currentMessageArea.innerHTML = '';
+                    convo.messages.forEach(msg => addMessageToChatView(msg.text, msg.type));
+
+                    // Animate slide transition
+                    conversationsListView.style.transform = 'translateX(-100%)';
+                    conversationsListView.style.opacity = '0';
+                    chatView.style.display = 'flex';
+                    setTimeout(() => {
+                        chatView.style.transform = 'translateX(0)';
+                        chatView.style.opacity = '1';
+                        conversationsListView.style.display = 'none';
+                    }, 10);
+                    currentMessageArea.scrollTop = currentMessageArea.scrollHeight; // Scroll to bottom
+                    messageInput.focus(); // Focus input field
+                }
+            }
+
+            // --- Function to Add Message to the Chat View ---
+            function addMessageToChatView(text, type, senderName = '') {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message', type);
+                // Add sender name if provided for received messages
+                if (senderName && type === 'received') {
+                    const senderSpan = document.createElement('span');
+                    senderSpan.classList.add('sender-name');
+                    senderSpan.textContent = senderName;
+                    messageDiv.appendChild(senderSpan);
+                }
+                const p = document.createElement('p');
+                p.textContent = text;
+                messageDiv.appendChild(p);
+                // Re-trigger popIn animation if needed
+                messageDiv.style.animation = 'none';
+                void messageDiv.offsetWidth; // trigger reflow
+                messageDiv.style.animation = '';
+                currentMessageArea.appendChild(messageDiv);
+                currentMessageArea.scrollTop = currentMessageArea.scrollHeight; // Auto-scroll
+            }
+
+            // --- Function to Show STK Push Overlay ---
+            function showStkPush(amount, recipient) {
+                stkMessage.textContent = `You are paying Ksh ${amount}.00 to ${recipient}. Enter M-PESA PIN.`;
+                stkPinInput.value = ''; // Clear any previous PIN
+                stkOverlay.style.display = 'flex'; // Show the overlay
+                stkPinInput.focus();
+            }
+
+            // --- Function to Hide STK Push Overlay ---
+            function hideStkPush() {
+                stkOverlay.style.display = 'none'; // Hide the overlay
+            }
+
+            // --- Function to Handle Sending a Message ---
+            async function sendMessage() {
+                const messageText = messageInput.value.trim();
+                if (messageText === '' || activeConversationId === null) return;
+
+                const currentConvo = conversations.find(c => c.id === activeConversationId);
+                if (!currentConvo) return;
+
+                // Display user's message immediately (if not an internal STK prompt action)
+                if (!stkPromptActive) {
+                    addMessageToChatView(messageText, 'sent');
+                    currentConvo.messages.push({ text: messageText, type: 'sent' });
+                    currentConvo.lastMessage = messageText;
+                    currentConvo.lastActivityTime = Date.now(); // Update activity timestamp
+                    renderConversationsList();
+                }
+                
+                messageInput.value = '';
+
+                try {
+                    const response = await fetch('/send_message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ 
+                            message: messageText, 
+                            convo_id: activeConversationId, 
+                            recipient_name: currentConvo.senderName, 
+                            recipient_number: currentConvo.senderNumber 
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.type === 'stk_prompt') {
+                        stkPromptActive = true;
+                        currentStkDetails = data;
+                        // Add 4 second delay before showing STK prompt
+                        setTimeout(() => {
+                            showStkPinPrompt(data.prompt_message);
+                        }, 4000);
+                    } else if (data.type === 'chat_reply') {
+                        addMessageToChatView(data.reply, 'received', currentConvo.senderName);
+                        currentConvo.messages.push({ text: data.reply, type: 'received' });
+                        currentConvo.lastMessage = data.reply;
+                        currentConvo.lastActivityTime = Date.now(); // Update activity timestamp
+                        renderConversationsList();
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    addMessageToChatView('Error: Could not connect to server.', 'received', currentConvo.senderName);
+                    currentConvo.messages.push({ text: 'Error: Could not connect to server.', type: 'received' });
+                    currentConvo.lastMessage = 'Error: Could not connect to server.';
+                    currentConvo.lastActivityTime = Date.now(); // Update activity timestamp
+                    renderConversationsList();
+                }
+            }
+
+            // Function to show the STK PIN prompt
+            function showStkPinPrompt(message) {
+                stkMessage.textContent = message;
+                stkPinInput.value = ''; // Clear any previous PIN
+                stkOverlay.style.display = 'flex';
+                stkPinInput.focus();
+            }
+
+            // Function to handle PIN confirmation
+            async function confirmPin(pin) {
+                if (!pin) {
+                    alert("Please enter PIN.");
+                    return;
+                }
+
+                stkPromptActive = false;
+                stkOverlay.style.display = 'none';
+
+                try {
+                    const response = await fetch('/enter_pin', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pin: pin })
+                    });
+                    const data = await response.json();
+                    if (data.status === 'success' && data.type === 'mpesa_confirmation_available') {
+                        // Show M-PESA confirmation in M-PESA chat
+                        displayMpesaConfirmation(data.confirmation_message, data.sender);
+                        // If this was a stock purchase, show Stock Trader confirmation and prompt for Hedera ID
+                        let stockTraderConvo = conversations.find(c => c.senderName === 'Stock Trader');
+                        if (stockTraderConvo && data.congrats_message) {
+                            stockTraderConvo.messages.push({ text: data.congrats_message, type: 'received' });
+                            stockTraderConvo.lastMessage = data.congrats_message;
+                            stockTraderConvo.lastActivityTime = Date.now(); // Update activity timestamp
+                            if (activeConversationId === stockTraderConvo.id) {
+                                addMessageToChatView(data.congrats_message, 'received', stockTraderConvo.senderName);
+                            }
+                            renderConversationsList();
+                        }
+                    } else {
+                        alert("STK Transaction Failed: " + data.message);
+                    }
+                } catch (error) {
+                    console.error('Error processing PIN:', error);
+                    alert('Error processing PIN. Please try again.');
+                }
+            }
+
+            // Function to cancel STK transaction
+            function cancelStk() {
+                stkPromptActive = false;
+                stkOverlay.style.display = 'none';
+                alert("STK transaction cancelled.");
+            }
+
+            // Function to display M-PESA confirmation
+            function displayMpesaConfirmation(message, senderName) {
+                // Find or create M-PESA conversation
+                let mpesaConvo = conversations.find(c => c.senderName === 'M-PESA');
+                
+                if (!mpesaConvo) {
+                    mpesaConvo = {
+                        id: conversations.length + 1,
+                        senderName: 'M-PESA',
+                        senderNumber: '       ',
+                        lastMessage: '',
+                        lastActivityTime: Date.now(),
+                        messages: []
+                    };
+                    conversations.push(mpesaConvo);
+                }
+
+                // Add the confirmation message
+                mpesaConvo.messages.push({ text: message, type: 'received' });
+                mpesaConvo.lastMessage = message;
+                mpesaConvo.lastActivityTime = Date.now(); // Update activity timestamp
+
+                // If currently viewing M-PESA chat, update the view
+                if (activeConversationId === mpesaConvo.id) {
+                    addMessageToChatView(message, 'received', mpesaConvo.id, senderName);
+                }
+
+                // Update conversations list
+                renderConversationsList();
+            }
+
+            // --- Event Listeners ---
+            sendButton.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            backToListButton.addEventListener('click', () => {
+                // Animate slide back
+                chatView.style.transform = 'translateX(100%)';
+                chatView.style.opacity = '0';
+                conversationsListView.style.display = 'flex';
+                conversationsListView.style.transform = 'translateX(0)';
+                conversationsListView.style.opacity = '1';
+                setTimeout(() => {
+                    chatView.style.display = 'none';
+                }, 400);
+                activeConversationId = null; // Clear active convo
+            });
+
+            stkCancelButton.addEventListener('click', () => {
+                cancelStk();
+            });
+
+            stkConfirmButton.addEventListener('click', () => {
+                const pin = stkPinInput.value.trim();
+                confirmPin(pin);
+            });
+
+            // Add keypress event for PIN input
+            stkPinInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    const pin = stkPinInput.value.trim();
+                    confirmPin(pin);
+                } else if (event.key === 'Escape') {
+                    cancelStk();
+                }
+            });
+
+
+            // Initial render
+            renderConversationsList();
+            conversationsListView.style.display = 'flex'; // Show list initially
+            conversationsListView.style.transform = 'translateX(0)';
+            conversationsListView.style.opacity = '1';
+            chatView.style.display = 'none'; // Hide chat initially
+            chatView.style.transform = 'translateX(100%)';
+            chatView.style.opacity = '0';
+            stkOverlay.style.display = 'none'; // Hide STK overlay initially
+        });
+    </script>
+</body>
+</html>

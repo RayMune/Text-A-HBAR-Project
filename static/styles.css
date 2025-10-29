@@ -1,0 +1,370 @@
+/* --- Stock Trader Persona Styles --- */
+.stock-trader .stock-icon {
+    width: 22px;
+    height: 22px;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+body {
+    background-color: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: Arial, sans-serif;
+    margin: 0;
+}
+
+.phone {
+    width: 360px;
+    height: 740px;
+    background-color: #111;
+    border-radius: 40px;
+    border: 10px solid #000;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Important for view switching */
+}
+
+.notch {
+    width: 100px; /* Reduced width from 160px */
+    height: 20px; /* Reduced height from 25px */
+    background-color: #000;
+    border-radius: 0 0 10px 10px; /* Adjusted radius slightly for a smaller notch */
+    position: absolute;
+    top: 10px;
+    z-index: 10; /* Higher z-index for the notch */
+}
+
+.screen {
+    width: 100%;
+    height: 100%;
+    background-color: #ffffff;
+    border-radius: 30px;
+    overflow: hidden; /* To contain the views */
+    display: flex; /* For controlling children views */
+    position: relative;
+}
+
+/* --- Conversations List View Styles --- */
+.conversations-list-view {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: #f0f2f5;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    transition: transform 0.4s ease-in-out, opacity 0.3s ease;
+    will-change: transform, opacity;
+}
+
+.conversations-list-view .top-bar {
+    background-color: #007bff;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2em;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    z-index: 2; /* Above the scrolling list */
+}
+
+.conversations-list-view .top-bar .new-message-btn {
+    background-color: #0056b3;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 1.5em;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.conversations-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    background-color: #fff;
+}
+
+.conversation-item {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.conversation-item:hover {
+    background-color: #f5f5f5;
+}
+
+.conversation-item .sender-info {
+    font-size: 1em;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 3px;
+}
+
+.conversation-item .sender-number {
+    font-size: 0.85em;
+    color: #666;
+    display: block;
+}
+
+.conversation-item .last-message-preview {
+    font-size: 0.9em;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 5px;
+}
+
+
+/* --- Chat View Styles --- */
+.chat-view {
+    width: 100%;
+    height: 100%;
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    background-color: #ffffff;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 5; /* Higher than conversations list when active */
+    transition: transform 0.4s ease-in-out, opacity 0.3s ease;
+    will-change: transform, opacity;
+}
+
+.chat-header {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    z-index: 6; /* Above message area */
+}
+
+.chat-header .back-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5em;
+    margin-right: 10px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.chat-header .sender-info {
+    flex-grow: 1;
+    text-align: left;
+    margin-bottom: 0; /* Override previous margin */
+}
+
+.chat-header .sender-name {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: white;
+    display: block;
+}
+
+.chat-header .sender-number {
+    font-size: 0.8em;
+    color: #cce0ff; /* Lighter blue for number */
+    display: block;
+}
+
+/* We decided not to show last message preview in chat header for a cleaner look */
+/* .chat-header .last-message-preview {
+    display: none;
+} */
+
+.message-area {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: #f0f2f5; /* Chat background color */
+}
+.message-area::-webkit-scrollbar {
+    width: 6px;
+}
+.message-area::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 3px;
+}
+
+.message {
+    max-width: 70%;
+    padding: 10px 15px;
+    border-radius: 20px;
+    word-wrap: break-word;
+    animation: popIn 0.25s ease;
+}
+@keyframes popIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.message.sent {
+    background-color: #007bff;
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 5px;
+}
+
+.message.received {
+    background-color: #e9e9eb;
+    color: black;
+    align-self: flex-start;
+    border-bottom-left-radius: 5px;
+}
+
+.input-area {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    background-color: #fff;
+    z-index: 6; /* Above message area */
+}
+
+#message-input {
+    flex-grow: 1;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 10px 15px;
+    font-size: 16px;
+    outline: none;
+}
+
+#send-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 20px;
+    margin-left: 10px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#send-button:hover {
+    background-color: #0056b3;
+}
+
+
+/* --- STK Push Overlay Styles --- */
+.stk-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black background */
+    display: flex; /* Flexbox for centering */
+    justify-content: center;
+    align-items: center;
+    z-index: 20; /* Ensure it's above everything else */
+    display: none; /* Hidden by default */
+}
+
+.stk-dialog {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 85%; /* Adjust width as needed */
+    max-width: 300px;
+    overflow: hidden;
+    animation: fadeSlideIn 0.3s ease-out;
+}
+@keyframes fadeSlideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.stk-header {
+    background-color: #30bb47; /* M-PESA green */
+    color: white;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.stk-header .mpesa-logo {
+    height: 25px; /* Adjust logo size */
+    margin-right: 10px;
+    filter: brightness(0) invert(1); /* Makes the logo white for contrast */
+}
+
+.stk-body {
+    padding: 20px;
+    text-align: center;
+}
+
+.stk-message {
+    margin-bottom: 15px;
+    font-size: 0.95em;
+    color: #333;
+}
+
+.stk-input {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1em;
+    text-align: center;
+}
+
+.stk-footer {
+    display: flex;
+    border-top: 1px solid #eee;
+}
+
+.stk-button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
+}
+
+.stk-button.cancel {
+    background-color: #f0f0f0;
+    color: #333;
+    border-right: 1px solid #eee;
+}
+
+.stk-button.cancel:hover {
+    background-color: #e0e0e0;
+}
+
+.stk-button.confirm {
+    background-color: #007bff;
+    color: white;
+}
+
+.stk-button.confirm:hover {
+    background-color: #0056b3;
+}

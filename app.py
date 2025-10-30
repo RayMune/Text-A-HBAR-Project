@@ -536,11 +536,11 @@ def enter_pin():
                 stock_name = purchase.get('stock_name', purchase.get('stock_requested', 'the stock'))
                 qty = purchase.get('qty', 1)
                 congrats_message = (
-                    f"✅ Payment confirmed (simulated). You purchased {qty} unit(s) of {stock_name}. "
+                    f"✅ Payment confirmed (Approved). You purchased {qty} unit(s) of {stock_name}. "
                     "Please enter your Hedera account ID (format: 0.x.y) so we can deliver your token."
                 )
             else:
-                congrats_message = "✅ Payment confirmed (simulated). No pending purchase found — if you intended to buy stock, please start a new order."
+                congrats_message = "✅ Payment confirmed (Approved). No pending purchase found — if you intended to buy stock, please start a new order."
 
             return jsonify({
                 'status': 'success',
